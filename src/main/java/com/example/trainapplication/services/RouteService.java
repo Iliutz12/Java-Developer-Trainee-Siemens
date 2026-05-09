@@ -100,8 +100,6 @@ public class RouteService {
                 }
             }
         }
-
-        // Valid stations but no path between them
         throw new NoSuchElementException(
                 "No route found between '" + fromStationName + "' and '" + toStationName + "'");
     }

@@ -13,10 +13,10 @@ public class BookingDtos {
             UserDtos.UserResponse user,
             TrainResponse train,
             Integer numberOfTickets,
-            String departureStation, // <-- NEW
-            String arrivalStation,   // <-- NEW
-            LocalTime departureTime, // <-- NEW
-            LocalTime arrivalTime    // <-- NEW
+            String departureStation,
+            String arrivalStation,
+            LocalTime departureTime,
+            LocalTime arrivalTime
     ) {
         public static BookingResponse fromEntity(Booking entity) {
             return new BookingResponse(

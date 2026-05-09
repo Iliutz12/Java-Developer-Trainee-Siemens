@@ -39,7 +39,6 @@ public class BookingService implements IBookingService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Use the pessimistic write lock version ONLY here, to prevent concurrent overbooking
         Train train = trainRepository.findByIdForUpdate(trainId)
                 .orElseThrow(() -> new RuntimeException("Train not found"));
 
@@ -48,7 +47,6 @@ public class BookingService implements IBookingService {
         int availableSeats = train.getTotalCapacity() - alreadyBookedCount;
 
         if (requestedTickets > availableSeats) {
-            // Throw instead of returning null — controller handles this cleanly
             throw new RuntimeException("Not enough seats. Requested: " + requestedTickets + ", Available: " + availableSeats);
         }
 
@@ -85,8 +83,6 @@ public class BookingService implements IBookingService {
         existing.setUser(booking.getUser());
         existing.setTrain(booking.getTrain());
         existing.setNumberOfTickets(booking.getNumberOfTickets());
-
-        // --- NEW FIELDS ---
         existing.setDepartureStation(booking.getDepartureStation());
         existing.setArrivalStation(booking.getArrivalStation());
         existing.setDepartureTime(booking.getDepartureTime());

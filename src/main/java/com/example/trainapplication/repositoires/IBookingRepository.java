@@ -13,7 +13,6 @@ public interface IBookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT COALESCE(SUM(b.numberOfTickets), 0) FROM Booking b WHERE b.train.id = :trainId")
     Integer sumBookedTicketsByTrainId(@Param("trainId") Long trainId);
-
     Booking getBookingByUser(User user);
     List<Booking> findByTrainId(Long trainId);
     @Modifying

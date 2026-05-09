@@ -95,11 +95,9 @@ public class DataSeeder implements CommandLineRunner {
                     train = trainRepository.save(train);
                 }
 
-                // 3. Parse times — START/END map to null
                 LocalTime arrivalTime   = START_MARKER.equals(arrivalStr)   ? null : LocalTime.parse(arrivalStr);
                 LocalTime departureTime = END_MARKER.equals(departureStr)   ? null : LocalTime.parse(departureStr);
 
-                // 4. Create and save Schedule entry
                 Schedule schedule = new Schedule();
                 schedule.setTrain(train);
                 schedule.setStation(station);

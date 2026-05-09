@@ -10,10 +10,10 @@ public record BookingRequest(
         Long userId,
         Long trainId,
         Integer numberOfTickets,
-        String departureStation, // <-- NEW
-        String arrivalStation,   // <-- NEW
-        LocalTime departureTime, // <-- NEW
-        LocalTime arrivalTime    // <-- NEW
+        String departureStation,
+        String arrivalStation,
+        LocalTime departureTime,
+        LocalTime arrivalTime
 ) {
     public static Booking toEntity(BookingRequest request) {
         User user = new User();
@@ -24,7 +24,6 @@ public record BookingRequest(
 
         Booking booking = new Booking(user, train, request.numberOfTickets());
 
-        // Map the new fields
         booking.setDepartureStation(request.departureStation());
         booking.setArrivalStation(request.arrivalStation());
         booking.setDepartureTime(request.departureTime());
