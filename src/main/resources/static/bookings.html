@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings — Railwise</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="nav-placeholder"></div>
+
+<div class="page">
+  <div class="page-header flex-between">
+    <div>
+      <div class="page-title">My bookings</div>
+      <div class="page-subtitle">All tickets you have booked</div>
+    </div>
+    <a href="book.html" class="btn btn-primary">+ Book tickets</a>
+  </div>
+
+  <div id="main-alert" class="hidden"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Tickets</span>
+      <span id="booking-count" class="badge badge-gray">—</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th>#</th>
+          <th>Train</th>
+          <th>From</th>
+          <th>Departure</th>
+          <th>To</th>
+          <th>Arrival</th>
+          <th>Tickets</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody id="bookings-body">
+        <tr><td colspan="9" style="text-align:center;padding:32px"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel confirm modal -->
+<div class="modal-overlay" id="cancel-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Cancel booking</span>
+      <button class="modal-close" onclick="closeModal('cancel-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.875rem; color:var(--text-2)">
+        Are you sure you want to cancel your booking for <strong id="cancel-train-name"></strong>?
+        This action cannot be undone.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('cancel-modal')">Keep booking</button>
+      <button class="btn btn-danger" id="confirm-cancel-btn">Cancel booking</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if (!Auth.requireAuth()) throw new Error('redirect');
+  renderNav('bookings');
+
+  const user = Auth.get();
+  let bookings = [];
+  let cancelId = null;
+
+  async function loadBookings() {
+    try {
+      const all = await apiGet('/bookings');
+      bookings = all.filter(b => b.user?.id === user.id);
+      renderBookings(); // No longer needs await since there are no extra API calls
+    } catch {
+      showAlert('main-alert', 'Failed to load bookings.', 'error');
+      document.getElementById('bookings-body').innerHTML =
+              `<tr><td colspan="9"><div class="empty-state"><div class="empty-state-text">Could not load bookings.</div></div></td></tr>`;
+    }
+  }
+
+  function renderBookings() {
+    const tbody = document.getElementById('bookings-body');
+    document.getElementById('booking-count').textContent =
+            `${bookings.length} booking${bookings.length !== 1 ? 's' : ''}`;
+
+    if (!bookings.length) {
+      tbody.innerHTML = `
+          <tr><td colspan="9">
+            <div class="empty-state">
+              <div class="empty-state-icon">🎫</div>
+              <div class="empty-state-title">No bookings yet</div>
+              <div class="empty-state-text">Book your first train ticket to get started</div>
+              <div class="mt-16"><a href="book.html" class="btn btn-primary btn-sm">Browse trains</a></div>
+            </div>
+          </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = bookings.map(b => {
+      const delay = b.train?.delayMinutes > 0
+              ? `<span class="badge badge-orange">+${b.train.delayMinutes}m delay</span>`
+              : `<span class="badge badge-green">On time</span>`;
+
+      // Read directly from the newly added fields in your DTO!
+      const fromStation  = b.departureStation ?? '—';
+      const toStation    = b.arrivalStation   ?? '—';
+      const departure    = b.departureTime    ? formatTime(b.departureTime) : '—';
+      const arrival      = b.arrivalTime      ? formatTime(b.arrivalTime) : '—';
+
+      return `
+          <tr>
+            <td class="text-mono text-muted">#${b.id}</td>
+            <td style="font-weight:600;font-family:var(--font-mono)">${escHtml(b.train?.name ?? '—')}</td>
+            <td style="font-size:0.85rem">${escHtml(fromStation)}</td>
+            <td>
+              <span class="text-mono" style="font-size:0.88rem;font-weight:500">${escHtml(departure)}</span>
+            </td>
+            <td style="font-size:0.85rem">${escHtml(toStation)}</td>
+            <td>
+              <span class="text-mono" style="font-size:0.88rem;font-weight:500">${escHtml(arrival)}</span>
+            </td>
+            <td>
+              <span style="font-weight:600;font-family:var(--font-mono)">${b.numberOfTickets}</span>
+              <span class="text-muted text-sm"> ticket${b.numberOfTickets !== 1 ? 's' : ''}</span>
+            </td>
+            <td>${delay}</td>
+            <td style="text-align:right">
+              <button class="btn btn-danger btn-sm"
+                onclick="promptCancel(${b.id}, '${escHtml(b.train?.name ?? '')}')">
+                Cancel
+              </button>
+            </td>
+          </tr>`;
+    }).join('');
+  }
+
+  function promptCancel(id, trainName) {
+    cancelId = id;
+    document.getElementById('cancel-train-name').textContent = trainName;
+    openModal('cancel-modal');
+  }
+
+  document.getElementById('confirm-cancel-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirm-cancel-btn');
+    setLoading(btn, true);
+    try {
+      await apiDelete(`/bookings/${cancelId}`);
+      closeModal('cancel-modal');
+      showAlert('main-alert', 'Booking cancelled successfully.', 'success');
+      loadBookings();
+    } catch {
+      showAlert('main-alert', 'Failed to cancel booking. Please try again.', 'error');
+    } finally {
+      setLoading(btn, false, 'Cancel booking');
+    }
+  });
+
+  loadBookings();
+</script>
+</body>
+</html>
