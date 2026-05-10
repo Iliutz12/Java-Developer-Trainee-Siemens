@@ -7,6 +7,7 @@ A Spring Boot REST API for managing train schedules, bookings, and passenger not
 ## Table of Contents
 
 - [Tech Stack](#tech-stack)
+- [Solution Description](#solution-description)
 - [Setup](#setup)
 - [Authentication](#authentication)
 - [Predefined Train Data](#predefined-train-data)
@@ -23,6 +24,20 @@ A Spring Boot REST API for managing train schedules, bookings, and passenger not
 - Spring Data JPA + PostgreSQL
 - Spring Mail
 - Lombok
+
+---
+
+## Solution Description
+#### 1. Finding Routes
+To figure out how to get from Station A to Station B, I used a BFS algorithm in the RouteService. 
+The most important part of this search is the time check. If the route requires you to change trains, the algorithm specifically checks the arrival time of your first train and the departure time of the connection. It enforces a minimum 5-minute gap for the changeover. If the next train leaves too soon, the algorithm ignores it and keeps searching for a valid route.
+
+#### 2. Login & Security
+To handle user accounts and admin privileges, I used Spring Security with JSON Web Tokens (JWT).
+When you log in with your username and password, the backend verifies it and hands you back a long string of characters. For any action that requires an account (booking a ticket or adding a train), you attach this token to your request. The token also remembers if you are a CUSTOMER or an ADMINISTRATOR. The app checks this to make sure regular users can't access the admin endpoints.
+
+#### 3. Auto-Loading Data
+The very first time you start the application, it reads the trains_initial_data.csv file and automatically fills the database with stations, trains, and schedules.
 
 ---
 
