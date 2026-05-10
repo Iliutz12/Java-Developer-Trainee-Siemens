@@ -36,6 +36,9 @@ The most important part of this search is the time check. If the route requires 
 To handle user accounts and admin privileges, I used Spring Security with JSON Web Tokens (JWT).
 When you log in with your username and password, the backend verifies it and hands you back a long string of characters. For any action that requires an account (booking a ticket or adding a train), you attach this token to your request. The token also remembers if you are a CUSTOMER or an ADMINISTRATOR. The app checks this to make sure regular users can't access the admin endpoints.
 
+### 3.Stopping Overbooking
+To make sure we don't accidentally sell the same seat twice, I used a Pessimistic Write Lock on the database. It sounds super fancy, but it just means when you hit 'book', it literally locks that train's data row. If two people try to snipe the exact same last seat at the exact same millisecond, the database forces them to wait in a single-file line. Zero overbooked trains.
+
 #### 3. Auto-Loading Data
 The very first time you start the application, it reads the trains_initial_data.csv file and automatically fills the database with stations, trains, and schedules.
 
