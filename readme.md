@@ -677,6 +677,39 @@ Response `200 OK`:
 ![Login](images/Admin-Get-Bookings.png)
 
 ---
+```
+GET /api/bookings/trainid/{id}
+```
+
+Returns every booking from a given train id.
+
+Response `200 OK`:
+```json
+[
+  {
+    "id": 23,
+    "user": {
+      "id": 5,
+      "username": "ilie",
+      "email": "ilieberindei0@gmail.com",
+      "role": "CUSTOMER"
+    },
+    "train": {
+      "id": 3,
+      "name": "IR1592"
+    },
+    "numberOfTickets": 2,
+    "departureStation": "Bucuresti Nord",
+    "arrivalStation": "Brasov",
+    "departureTime": "07:00:00",
+    "arrivalTime": "09:15:00"
+  }
+]
+```
+![Login](images/Admin-Get-Bookings-TrainId.png)
+
+---
+
 
 ### 7. Admin – Report a Delay
 

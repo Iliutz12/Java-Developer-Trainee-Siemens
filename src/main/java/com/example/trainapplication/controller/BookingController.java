@@ -78,4 +78,13 @@ public class BookingController {
                         .toList()
         );
     }
+
+    @GetMapping("/trainid/{trainId}")
+    public ResponseEntity<List<BookingDtos.BookingResponse>> getBookingsByTrainId(@PathVariable Long trainId) {
+        return ResponseEntity.ok(
+                bookingService.getBookingsByTrain(trainId).stream()
+                        .map(BookingDtos.BookingResponse::fromEntity)
+                        .toList()
+        );
+    }
 }

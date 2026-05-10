@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BookingService implements IBookingService {
@@ -107,5 +108,13 @@ public class BookingService implements IBookingService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return bookingRepository.findByUserId(userId);
+    }
+
+    @Override
+    public List<Booking> getBookingsByTrain(Long trainId) {
+        trainRepository.findById(trainId)
+                .orElseThrow(() -> new RuntimeException("Train not found"));
+
+        return bookingRepository.findByTrainId(trainId);
     }
 }

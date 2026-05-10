@@ -13,4 +13,5 @@ public interface IBookingService {
     Booking updateBooking(Long id, Booking booking);
     void deleteBookingById(Long id);
     List<Booking> getBookingsByUser(Long userId);
+    List<Booking> getBookingsByTrain(Long trainId);
 }
