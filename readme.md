@@ -1,6 +1,6 @@
 # Train Ticketing Application
 
-A Spring Boot REST API for managing train schedules, bookings, and passenger notifications. Includes a frontend and JWT-based authentication.
+A Spring Boot REST API for managing train schedules, bookings, and passenger notifications. Includes a JWT-based authentication.
 
 ---
 
@@ -752,7 +752,6 @@ src/main/java/com/example/trainapplication/
 └── services/                        # Business logic (interfaces + implementations)
 
 src/main/resources/
-├── static/                          # Vanilla JS frontend
 ├── application.properties           # Config — all secrets via environment variables
 └── trains_initial_data.csv          # Seed data: 7 trains across Romania
 ```
