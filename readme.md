@@ -71,7 +71,7 @@ Credentials are never hardcoded. Set these environment variables before running:
 ### 4. Run
 
 
-The app starts on **http://localhost:8080**. Open `http://localhost:8080/index.html` for the UI.
+The app starts on **http://localhost:8080**.
 
 On first startup, `DataSeeder` automatically loads 7 trains and their routes from `trains_initial_data.csv`.
 
