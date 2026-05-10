@@ -7,11 +7,10 @@ import java.util.List;
 
 public interface IBookingService {
 
-    public List<Booking> getBookings();
-    public Booking getBookingById(Long id);
-    public Booking createBooking(Booking booking);
-    public Booking updateBooking(Long id,Booking booking);
-    public void deleteBookingById(Long id);
-    public Booking getBookingByUser(User user);
-
+    List<Booking> getBookings();
+    Booking getBookingById(Long id);
+    Booking createBooking(Booking booking);
+    Booking updateBooking(Long id, Booking booking);
+    void deleteBookingById(Long id);
+    List<Booking> getBookingsByUser(Long userId);
 }

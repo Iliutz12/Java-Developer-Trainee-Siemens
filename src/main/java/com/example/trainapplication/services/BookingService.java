@@ -3,9 +3,9 @@ package com.example.trainapplication.services;
 import com.example.trainapplication.model.Booking;
 import com.example.trainapplication.model.Train;
 import com.example.trainapplication.model.User;
-import com.example.trainapplication.repositoires.IBookingRepository;
-import com.example.trainapplication.repositoires.ITrainRepository;
-import com.example.trainapplication.repositoires.IUserRepository;
+import com.example.trainapplication.repositories.IBookingRepository;
+import com.example.trainapplication.repositories.ITrainRepository;
+import com.example.trainapplication.repositories.IUserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -23,17 +23,17 @@ public class BookingService implements IBookingService {
                           ITrainRepository trainRepository,
                           IUserRepository userRepository,
                           INotificationService notificationService) {
-        this.bookingRepository = bookingRepository;
-        this.trainRepository = trainRepository;
-        this.userRepository = userRepository;
+        this.bookingRepository   = bookingRepository;
+        this.trainRepository     = trainRepository;
+        this.userRepository      = userRepository;
         this.notificationService = notificationService;
     }
 
     @Override
     @Transactional
     public Booking createBooking(Booking booking) {
-        Long userId = booking.getUser().getId();
-        Long trainId = booking.getTrain().getId();
+        Long userId           = booking.getUser().getId();
+        Long trainId          = booking.getTrain().getId();
         Integer requestedTickets = booking.getNumberOfTickets();
 
         User user = userRepository.findById(userId)
@@ -43,26 +43,22 @@ public class BookingService implements IBookingService {
                 .orElseThrow(() -> new RuntimeException("Train not found"));
 
         Integer alreadyBooked = bookingRepository.sumBookedTicketsByTrainId(trainId);
-        int alreadyBookedCount = (alreadyBooked != null) ? alreadyBooked : 0;
-        int availableSeats = train.getTotalCapacity() - alreadyBookedCount;
+        int booked = (alreadyBooked != null) ? alreadyBooked : 0;
+        int available = train.getTotalCapacity() - booked;
 
-        if (requestedTickets > availableSeats) {
-            throw new RuntimeException("Not enough seats. Requested: " + requestedTickets + ", Available: " + availableSeats);
+        if (requestedTickets > available) {
+            throw new RuntimeException(
+                    "Not enough seats. Requested: " + requestedTickets + ", Available: " + available);
         }
 
         booking.setUser(user);
         booking.setTrain(train);
-        booking.setNumberOfTickets(requestedTickets);
-        Booking savedBooking = bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
 
         notificationService.sendBookingConfirmation(
-                user.getEmail(),
-                user.getUsername(),
-                train.getName(),
-                requestedTickets
-        );
+                user.getEmail(), user.getUsername(), train.getName(), requestedTickets);
 
-        return savedBooking;
+        return saved;
     }
 
     @Override
@@ -107,11 +103,9 @@ public class BookingService implements IBookingService {
     }
 
     @Override
-    public Booking getBookingByUser(User user) {
-        User userToFind = userRepository.findByUsername(user.getUsername());
-        if (userToFind == null) {
-            throw new RuntimeException("User not found");
-        }
-        return bookingRepository.getBookingByUser(userToFind);
+    public List<Booking> getBookingsByUser(Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return bookingRepository.findByUserId(userId);
     }
 }

@@ -1,4 +1,4 @@
-package com.example.trainapplication.repositoires;
+package com.example.trainapplication.repositories;
 
 import com.example.trainapplication.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;

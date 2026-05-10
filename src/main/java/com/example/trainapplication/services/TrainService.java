@@ -7,10 +7,10 @@ import com.example.trainapplication.model.Booking;
 import com.example.trainapplication.model.Schedule;
 import com.example.trainapplication.model.Station;
 import com.example.trainapplication.model.Train;
-import com.example.trainapplication.repositoires.IBookingRepository;
-import com.example.trainapplication.repositoires.IScheduleRepository;
-import com.example.trainapplication.repositoires.IStationRepository;
-import com.example.trainapplication.repositoires.ITrainRepository;
+import com.example.trainapplication.repositories.IBookingRepository;
+import com.example.trainapplication.repositories.IScheduleRepository;
+import com.example.trainapplication.repositories.IStationRepository;
+import com.example.trainapplication.repositories.ITrainRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -31,11 +31,11 @@ public class TrainService implements ITrainService {
                         INotificationService notificationService,
                         IScheduleRepository scheduleRepository,
                         IStationRepository stationRepository) {
-        this.trainRepository = trainRepository;
-        this.bookingRepository = bookingRepository;
+        this.trainRepository     = trainRepository;
+        this.bookingRepository   = bookingRepository;
         this.notificationService = notificationService;
-        this.scheduleRepository = scheduleRepository;
-        this.stationRepository = stationRepository;
+        this.scheduleRepository  = scheduleRepository;
+        this.stationRepository   = stationRepository;
     }
 
     @Override
@@ -43,9 +43,7 @@ public class TrainService implements ITrainService {
         return trainRepository.findAll().stream()
                 .map(t -> {
                     Integer booked = bookingRepository.sumBookedTicketsByTrainId(t.getId());
-                    int safeBookedCount = (booked != null) ? booked : 0;
-
-                    return TrainDtos.TrainResponse.fromEntity(t, safeBookedCount);
+                    return TrainDtos.TrainResponse.fromEntity(t, booked != null ? booked : 0);
                 })
                 .toList();
     }
@@ -71,31 +69,13 @@ public class TrainService implements ITrainService {
 
         existing.setName(request.name());
         existing.setTotalCapacity(request.totalCapacity());
-        Train savedTrain = trainRepository.save(existing);
+        Train saved = trainRepository.save(existing);
 
         if (request.stops() != null && !request.stops().isEmpty()) {
-            scheduleRepository.deleteByTrainId(existing.getId());
-            for (StopRequest stop : request.stops()) {
-                Station station = stationRepository.findByName(stop.stationName());
-                if (station == null) {
-                    station = stationRepository.save(new Station(stop.stationName()));
-                }
-                Schedule schedule = new Schedule();
-                schedule.setTrain(savedTrain);
-                schedule.setStation(station);
-                schedule.setArrivalTime(
-                        stop.arrivalTime() != null && !stop.arrivalTime().isEmpty()
-                                ? LocalTime.parse(stop.arrivalTime()) : null
-                );
-                schedule.setDepartureTime(
-                        stop.departureTime() != null && !stop.departureTime().isEmpty()
-                                ? LocalTime.parse(stop.departureTime()) : null
-                );
-                schedule.setStopOrder(stop.stopOrder());
-                scheduleRepository.save(schedule);
-            }
+            scheduleRepository.deleteByTrainId(saved.getId());
+            saveStops(saved, request.stops());
         }
-        return savedTrain;
+        return saved;
     }
 
     @Override
@@ -105,10 +85,9 @@ public class TrainService implements ITrainService {
                 .orElseThrow(() -> new RuntimeException("Train not found: " + trainId));
 
         train.setDelayMinutes(minutes);
-        Train updatedTrain = trainRepository.save(train);
+        Train updated = trainRepository.save(train);
 
         List<Booking> bookings = bookingRepository.findByTrainId(trainId);
-
         for (Booking b : bookings) {
             notificationService.sendDelayNotification(
                     b.getUser().getEmail(),
@@ -117,7 +96,7 @@ public class TrainService implements ITrainService {
                     minutes
             );
         }
-        return updatedTrain;
+        return updated;
     }
 
     @Override
@@ -127,15 +106,30 @@ public class TrainService implements ITrainService {
         train.setName(request.name());
         train.setTotalCapacity(request.totalCapacity());
         train.setDelayMinutes(0);
-        Train savedTrain = trainRepository.save(train);
+        Train saved = trainRepository.save(train);
+        saveStops(saved, request.stops());
+        return saved;
+    }
 
-        for (StopRequest stop : request.stops()) {
+    @Override
+    public List<StopRequest> getTrainRoute(Long id) {
+        return scheduleRepository.findByTrainIdOrderByStopOrderAsc(id).stream()
+                .map(s -> new StopRequest(
+                        s.getStation().getName(),
+                        s.getArrivalTime()   != null ? s.getArrivalTime().toString()   : null,
+                        s.getDepartureTime() != null ? s.getDepartureTime().toString() : null,
+                        s.getStopOrder()
+                )).toList();
+    }
+
+    private void saveStops(Train train, List<StopRequest> stops) {
+        for (StopRequest stop : stops) {
             Station station = stationRepository.findByName(stop.stationName());
             if (station == null) {
                 station = stationRepository.save(new Station(stop.stationName()));
             }
             Schedule schedule = new Schedule();
-            schedule.setTrain(savedTrain);
+            schedule.setTrain(train);
             schedule.setStation(station);
             schedule.setArrivalTime(
                     stop.arrivalTime() != null && !stop.arrivalTime().isEmpty()
@@ -148,17 +142,5 @@ public class TrainService implements ITrainService {
             schedule.setStopOrder(stop.stopOrder());
             scheduleRepository.save(schedule);
         }
-        return savedTrain;
-    }
-
-    @Override
-    public List<StopRequest> getTrainRoute(Long id) {
-        return scheduleRepository.findByTrainIdOrderByStopOrderAsc(id).stream()
-                .map(s -> new StopRequest(
-                        s.getStation().getName(),
-                        s.getArrivalTime() != null ? s.getArrivalTime().toString() : null,
-                        s.getDepartureTime() != null ? s.getDepartureTime().toString() : null,
-                        s.getStopOrder()
-                )).toList();
     }
 }

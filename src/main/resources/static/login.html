@@ -60,11 +60,11 @@
       setLoading(btn, true);
 
       try {
-        const user = await apiPost('/home-page/login', {
+        const data = await apiPost('/home-page/login', {
           username: document.getElementById('username').value.trim(),
           password: document.getElementById('password').value,
         });
-        Auth.set(user);
+        Auth.set(data.user, data.token);
         window.location.href = 'index.html';
       } catch (err) {
         showAlert('alert-box', 'Invalid username or password.', 'error');

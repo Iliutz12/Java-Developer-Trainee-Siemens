@@ -4,8 +4,8 @@ import com.example.trainapplication.dtos.RouteDtos;
 import com.example.trainapplication.model.Schedule;
 import com.example.trainapplication.model.Station;
 import com.example.trainapplication.model.Train;
-import com.example.trainapplication.repositoires.IScheduleRepository;
-import com.example.trainapplication.repositoires.IStationRepository;
+import com.example.trainapplication.repositories.IScheduleRepository;
+import com.example.trainapplication.repositories.IStationRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;

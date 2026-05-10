@@ -27,16 +27,13 @@ public class RouteController {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Both fromStation and toStation are required."));
         }
-
         try {
             RouteDtos.RouteSearchResponse response =
                     routeService.findRoute(request.fromStation(), request.toStation());
             return ResponseEntity.ok(response);
-
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
-
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));

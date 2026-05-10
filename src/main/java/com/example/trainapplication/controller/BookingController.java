@@ -4,11 +4,11 @@ import com.example.trainapplication.contracts.BookingRequest;
 import com.example.trainapplication.dtos.BookingDtos;
 import com.example.trainapplication.model.Booking;
 import com.example.trainapplication.services.IBookingService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -24,25 +24,39 @@ public class BookingController {
 
     @GetMapping
     public ResponseEntity<List<BookingDtos.BookingResponse>> getAllBookings() {
-        List<Booking> bookings = bookingService.getBookings();
-        List<BookingDtos.BookingResponse> result = new ArrayList<>();
-        for (Booking booking : bookings) {
-            result.add(BookingDtos.BookingResponse.fromEntity(booking));
-        }
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(
+                bookingService.getBookings().stream()
+                        .map(BookingDtos.BookingResponse::fromEntity)
+                        .toList()
+        );
     }
 
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody BookingRequest request) {
+    public ResponseEntity<?> createBooking(@Valid @RequestBody BookingRequest request) {
         try {
-            Booking toCreate = BookingRequest.toEntity(request);
-            Booking savedBooking = bookingService.createBooking(toCreate);
+            Booking saved = bookingService.createBooking(BookingRequest.toEntity(request));
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(BookingDtos.BookingResponse.fromEntity(savedBooking));
+                    .body(BookingDtos.BookingResponse.fromEntity(saved));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<BookingDtos.BookingResponse> getById(@PathVariable Long id) {
+        Booking booking = bookingService.getBookingById(id);
+        if (booking == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(BookingDtos.BookingResponse.fromEntity(booking));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BookingDtos.BookingResponse> updateBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingRequest request) {
+        Booking updated = bookingService.updateBooking(id, BookingRequest.toEntity(request));
+        if (updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(BookingDtos.BookingResponse.fromEntity(updated));
     }
 
     @DeleteMapping("/{id}")
@@ -56,24 +70,12 @@ public class BookingController {
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<BookingDtos.BookingResponse> getById(@PathVariable Long id) {
-        Booking booking = bookingService.getBookingById(id);
-        if (booking == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(BookingDtos.BookingResponse.fromEntity(booking));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<BookingDtos.BookingResponse> updateBooking(
-            @PathVariable Long id,
-            @RequestBody BookingRequest request) {
-        Booking toUpdate = BookingRequest.toEntity(request);
-        Booking updatedBooking = bookingService.updateBooking(id, toUpdate);
-        if (updatedBooking == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(BookingDtos.BookingResponse.fromEntity(updatedBooking));
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<BookingDtos.BookingResponse>> getByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(
+                bookingService.getBookingsByUser(userId).stream()
+                        .map(BookingDtos.BookingResponse::fromEntity)
+                        .toList()
+        );
     }
 }

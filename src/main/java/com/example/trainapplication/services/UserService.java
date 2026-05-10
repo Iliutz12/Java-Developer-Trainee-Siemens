@@ -1,7 +1,7 @@
 package com.example.trainapplication.services;
 
 import com.example.trainapplication.model.User;
-import com.example.trainapplication.repositoires.IUserRepository;
+import com.example.trainapplication.repositories.IUserRepository;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import org.springframework.security.crypto.password.PasswordEncoder;

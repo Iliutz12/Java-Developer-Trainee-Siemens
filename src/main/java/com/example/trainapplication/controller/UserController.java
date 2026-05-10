@@ -4,7 +4,9 @@ import com.example.trainapplication.contracts.LoginRequest;
 import com.example.trainapplication.contracts.UserRequest;
 import com.example.trainapplication.dtos.UserDtos;
 import com.example.trainapplication.model.User;
+import com.example.trainapplication.security.JwtUtils;
 import com.example.trainapplication.services.IUserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +20,11 @@ import java.util.Map;
 public class UserController {
 
     private final IUserService userService;
+    private final JwtUtils jwtUtils;
 
-    public UserController(IUserService userService) {
+    public UserController(IUserService userService, JwtUtils jwtUtils) {
         this.userService = userService;
+        this.jwtUtils    = jwtUtils;
     }
 
     @GetMapping
@@ -34,7 +38,7 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createUser(@RequestBody UserRequest request) {
+    public ResponseEntity<?> createUser(@Valid @RequestBody UserRequest request) {
         if (userService.getUserByUsername(request.username()) != null ||
                 userService.getUserByEmail(request.email()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -53,10 +57,17 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest request) {
         User loginUser = userService.authenticate(request.username(), request.password());
         if (loginUser != null) {
-            return ResponseEntity.ok(UserDtos.UserResponse.fromEntity(loginUser));
+            String token = jwtUtils.generateToken(
+                    loginUser.getUsername(),
+                    loginUser.getRole().name()
+            );
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "user",  UserDtos.UserResponse.fromEntity(loginUser)
+            ));
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Invalid username or password."));
@@ -78,7 +89,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserRequest request) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserRequest request) {
         User toUpdate = UserRequest.toEntity(request);
         User updatedUser = userService.updateUser(id, toUpdate);
 

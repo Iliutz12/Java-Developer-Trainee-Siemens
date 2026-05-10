@@ -1,27 +1,28 @@
 package com.example.trainapplication.controller;
 
-import com.example.trainapplication.contracts.*;
+import com.example.trainapplication.contracts.DelayRequest;
+import com.example.trainapplication.contracts.StopRequest;
+import com.example.trainapplication.contracts.TrainRequest;
+import com.example.trainapplication.contracts.TrainWithRouteRequest;
 import com.example.trainapplication.dtos.TrainDtos;
 import com.example.trainapplication.model.Train;
-import com.example.trainapplication.repositoires.IBookingRepository;
 import com.example.trainapplication.services.ITrainService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("api/admin/trains")
 public class TrainController {
 
     private final ITrainService trainService;
-    private final IBookingRepository bookingRepository;
 
-    public TrainController(ITrainService trainService,
-                           IBookingRepository bookingRepository) {
+    public TrainController(ITrainService trainService) {
         this.trainService = trainService;
-        this.bookingRepository = bookingRepository;
     }
 
     @GetMapping
@@ -30,7 +31,7 @@ public class TrainController {
     }
 
     @PostMapping
-    public ResponseEntity<TrainDtos.TrainResponse> create(@RequestBody TrainRequest request) {
+    public ResponseEntity<TrainDtos.TrainResponse> create(@Valid @RequestBody TrainRequest request) {
         Train t = new Train();
         t.setName(request.name());
         t.setTotalCapacity(request.totalCapacity());
@@ -39,11 +40,32 @@ public class TrainController {
                 .body(TrainDtos.TrainResponse.fromEntity(saved, 0));
     }
 
+    @PostMapping("/with-route")
+    public ResponseEntity<TrainDtos.TrainResponse> createWithRoute(
+            @Valid @RequestBody TrainWithRouteRequest request) {
+        Train saved = trainService.createTrainWithRoute(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(TrainDtos.TrainResponse.fromEntity(saved, 0));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTrain(
+            @PathVariable Long id,
+            @Valid @RequestBody TrainWithRouteRequest request) {
+        Train updated = trainService.updateTrain(id, request);
+        if (updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(TrainDtos.TrainResponse.fromEntity(updated, 0));
+    }
+
     @PutMapping("/delay")
-    public ResponseEntity<TrainDtos.TrainResponse> setDelay(@RequestBody DelayRequest request) {
-        Train updated = trainService.updateDelay(request.trainId(), request.delayMinutes());
-        Integer booked = bookingRepository.sumBookedTicketsByTrainId(updated.getId());
-        return ResponseEntity.ok().body(TrainDtos.TrainResponse.fromEntity(updated, booked != null ? booked : 0));
+    public ResponseEntity<?> setDelay(@Valid @RequestBody DelayRequest request) {
+        try {
+            Train updated = trainService.updateDelay(request.trainId(), request.delayMinutes());
+            return ResponseEntity.ok(TrainDtos.TrainResponse.fromEntity(updated, 0));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -52,26 +74,8 @@ public class TrainController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/with-route")
-    public ResponseEntity<TrainDtos.TrainResponse> createWithRoute(@RequestBody TrainWithRouteRequest request) {
-        Train savedTrain = trainService.createTrainWithRoute(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(TrainDtos.TrainResponse.fromEntity(savedTrain, 0));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<TrainDtos.TrainResponse> updateTrain(@PathVariable Long id, @RequestBody TrainWithRouteRequest request) {
-        Train updatedTrain = trainService.updateTrain(id, request);
-        if (updatedTrain == null) {
-            return ResponseEntity.notFound().build();
-        }
-        Integer booked = bookingRepository.sumBookedTicketsByTrainId(updatedTrain.getId());
-        return ResponseEntity.ok(TrainDtos.TrainResponse.fromEntity(updatedTrain, booked != null ? booked : 0));
-    }
-
     @GetMapping("/{id}/route")
     public ResponseEntity<List<StopRequest>> getTrainRoute(@PathVariable Long id) {
-        List<StopRequest> route = trainService.getTrainRoute(id);
-        return ResponseEntity.ok(route);
+        return ResponseEntity.ok(trainService.getTrainRoute(id));
     }
 }

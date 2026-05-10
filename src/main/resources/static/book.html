@@ -200,7 +200,7 @@
 
   async function loadTrains() {
     try {
-      trains = await apiGet('/admin/trains');
+      trains = await apiGet('/trains');
       renderTrains(trains);
 
       // If we came from search, auto-select the matching train
